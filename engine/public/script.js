@@ -55,39 +55,42 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Function to display search results (mostly unchanged, except for linking)
-    const displayResults = (results) => {
-        searchResultsDiv.innerHTML = ''; // Clear previous results
-        if (results.length === 0) {
+    const displayResults = (results) =>
+    {
+        searchResultsDiv.innerHTML = '';
+    
+        if (results.length === 0)
+        {
             searchResultsDiv.innerHTML = '<p>クエリに一致するドキュメントが見つかりません。</p>';
             return;
         }
-
-        results.forEach(result => {
-            const resultItem = document.createElement('div');
-            resultItem.classList.add('result-item');
-
-            const docNameWithoutExt = result.fileName.split('.').slice(0, -1).join('.');
-            const previewTextContent = result.displaySnippet ? result.displaySnippet : `[${result.extension.substring(1).toUpperCase()} Document]`;
-
-            const docTitle = result.firstLineForTitle ?
-                `${docNameWithoutExt} | ${result.firstLineForTitle.substring(0, 50)}${result.firstLineForTitle.length > 50 ? '...' : ''}` :
-                docNameWithoutExt;
-
-            const link = document.createElement('a');
-            link.href = `javascript:void(0)`; // Prevent default navigation
-            link.textContent = docNameWithoutExt;
-            link.title = `Open ${result.fileName}`;
-            link.addEventListener('click', () => openDocument(result.fileName, docTitle));
-
-            const previewText = document.createElement('p');
-            previewText.textContent = previewTextContent;
-
-            resultItem.appendChild(link);
-            resultItem.appendChild(previewText);
-            searchResultsDiv.appendChild(resultItem);
+    
+        results.forEach(Result =>
+        {
+            const ResultItem = document.createElement('div');
+            ResultItem.classList.add('result-item');
+    
+            const FileName = Result.fileName;
+            const Extension = Result.extension;
+            const FileNameWithoutExt = FileName.split('.').slice(0, -1).join('.');
+            const FirstLine = Result.firstLineForTitle ? Result.firstLineForTitle.trim() : '';
+            const DisplayTitle = FirstLine ? `${FileNameWithoutExt} | ${FirstLine}` : FileNameWithoutExt;
+    
+            const Link = document.createElement('a');
+            Link.href = 'javascript:void(0)';
+            Link.textContent = DisplayTitle;
+            Link.title = `Open ${FileName}`;
+            Link.addEventListener('click', () => openDocument(FileName, DisplayTitle));
+    
+            const PreviewText = document.createElement('p');
+            PreviewText.textContent = Result.displaySnippet || `[${Extension.substring(1).toUpperCase()} Document]`;
+    
+            ResultItem.appendChild(Link);
+            ResultItem.appendChild(PreviewText);
+            searchResultsDiv.appendChild(ResultItem);
         });
     };
-
+    
     // Function to open a document in the document view
     const openDocument = async (filename, titleForPage) => {
         showView('document'); // Show document view
