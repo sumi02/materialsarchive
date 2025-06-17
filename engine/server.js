@@ -122,7 +122,7 @@ app.get('/search', async (req, res) => {
                     // If query wasn't found in content (or it's not a text file)
                     // and it's found in the filename, display filename as snippet or generic
                     if (!foundInContent && file.toLowerCase().includes(query)) {
-                        displaySnippet = `Filename match: ${file}`;
+                        displaySnippet = `ファイル名の一致：${file}`;
                     } else if (!foundInContent && !file.toLowerCase().includes(query)) {
                          // Fallback for cases where query is present but not found clearly in snippet or filename
                          displaySnippet = `[${ext.substring(1).toUpperCase()} File]`;

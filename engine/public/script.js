@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (viewName === 'search') {
             searchView.style.display = 'block';
             documentView.style.display = 'none';
-            pageTitle.textContent = 'Archive Search Engine'; // Reset main page title
+            pageTitle.textContent = 'materials archive (m.a.)'; // Reset main page title
         } else if (viewName === 'document') {
             searchView.style.display = 'none';
             documentView.style.display = 'block';
@@ -38,8 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const performSearch = async (query = '') => {
         currentQuery = query; // Update current query
         showView('search'); // Show search view
-        searchResultsDiv.innerHTML = '<p>Searching...</p>'; // Show loading message
-        documentContentDiv.innerHTML = '<p>Loading document...</p>'; // Reset document content
+        searchResultsDiv.innerHTML = '<p>検索中…</p>'; // Show loading message
+        documentContentDiv.innerHTML = '<p>ドキュメントを読み込み中…</p>'; // Reset document content
 
         try {
             const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
             displayResults(results);
         } catch (error) {
             console.error('Error fetching search results:', error);
-            searchResultsDiv.innerHTML = '<p style="color: red;">Error searching. Please try again.</p>';
+            searchResultsDiv.innerHTML = '<p style="color: red;">検索エラーが発生しました。もう一度お試しください。</p>';
         }
     };
 
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const displayResults = (results) => {
         searchResultsDiv.innerHTML = ''; // Clear previous results
         if (results.length === 0) {
-            searchResultsDiv.innerHTML = '<p>No documents found matching your query.</p>';
+            searchResultsDiv.innerHTML = '<p>クエリに一致するドキュメントが見つかりません。</p>';
             return;
         }
 
