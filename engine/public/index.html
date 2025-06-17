@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">materials archive (m.a.)</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <button class="theme-toggle" aria-label="ダークモードを切り替え" onclick="ToggleTheme()">🌙</button>
+
+    <div class="container">
+        <div id="searchView" class="view-section">
+            <header id="mainHeader">
+                <h1><span class="old-font">m</span>aterials <span class="old-font">a</span>rchive (m.a.)</h1>
+                <p>インターネット上のあらゆる情報を保存する、普遍的なアーカイブ</p>
+            </header>
+
+            <div class="search-box" id="searchBox">
+                <input type="text" id="searchInput" placeholder="キーワードを入力...">
+                <button id="searchButton">検索</button>
+            </div>
+
+            <div id="searchResults" class="results-container">
+            </div>
+        </div>
+
+        <div id="documentView" class="view-section" style="display: none;">
+            <div class="document-header">
+                <h2 id="currentDocumentName"></h2>
+                <button class="back-button" onclick="window.history.back()">検索に戻る</button>
+            </div>
+            <div class="document-content" id="documentContent">
+                <p>ドキュメントを読み込み中…</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function ToggleTheme()
+        {
+            document.body.classList.toggle('dark-mode');
+        }
+    </script>
+
+    <script src="script.js"></script>
+</body>
+</html>
