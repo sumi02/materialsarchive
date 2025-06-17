@@ -1,6 +1,6 @@
 # materials archive
 
-*ENG: [English Translation](docs/README1.md)*
+*ENG: [English Translation](info/README1.md)*
 
 **m.a.（materials archive）** は、インターネット上のあらゆる情報を収集・保存・索引化するユニバーサルアーカイブです。時間の経過とともに忘れられたり、削除されたり、アクセス不可能になったコンテンツを保存することを目的としています。
 
