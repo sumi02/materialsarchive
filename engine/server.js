@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
@@ -8,181 +7,207 @@ const app = express();
 const PORT = 3000;
 const ARCHIVE_DIR = path.join(__dirname, 'archive');
 
-// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Middleware to parse JSON bodies (if needed for future expansions)
 app.use(express.json());
 
-// Helper function to get file extension
-function getFileExtension(filename) {
-    return path.extname(filename).toLowerCase();
+function getFileExtension(Filename)
+{
+    return path.extname(Filename).toLowerCase();
 }
 
-// Function to read and process text files for search
-async function getTextFileContent(filePath) {
-    try {
-        const content = await fs.readFile(filePath, 'utf8');
-        return content;
-    } catch (error) {
-        // console.error(`Error reading file ${filePath}:`, error); // Log only if really an error
-        return null; // Return null if not a readable text file (e.g., binary)
+async function getTextFileContent(FilePath)
+{
+    try
+    {
+        const Content = await fs.readFile(FilePath, 'utf8');
+        return Content;
+    }
+    catch
+    {
+        return null;
     }
 }
 
-// Function to find the relevant line/snippet for search results
-function getRelevantSnippet(content, query) {
-    if (!content || !query) {
-        return content ? content.split('\n')[0].trim() : ''; // Fallback to first line
+function getRelevantSnippet(Content, Query)
+{
+    if (!Content || !Query)
+    {
+        return Content ? Content.split('\n')[0].trim() : '';
     }
 
-    const lowerCaseContent = content.toLowerCase();
-    const lowerCaseQuery = query.toLowerCase();
-    const lines = content.split('\n');
+    const LowerQuery = Query.toLowerCase();
+    const Lines = Content.split('\n');
 
-    for (const line of lines) {
-        if (line.toLowerCase().includes(lowerCaseQuery)) {
-            // Found a line with the query
-            let snippet = line.trim();
-            // Optional: Limit snippet length and add ellipsis
-            if (snippet.length > 100) { // Limit to 100 characters for snippet
-                const queryIndex = snippet.toLowerCase().indexOf(lowerCaseQuery);
-                let start = Math.max(0, queryIndex - 20); // Start 20 chars before query
-                let end = Math.min(snippet.length, queryIndex + lowerCaseQuery.length + 50); // End 50 chars after query
+    for (const Line of Lines)
+    {
+        if (Line.toLowerCase().includes(LowerQuery))
+        {
+            let Snippet = Line.trim();
 
-                if (start > 0) snippet = '...' + snippet.substring(start);
-                if (end < snippet.length) snippet = snippet.substring(0, end - start) + '...';
-                else snippet = snippet.substring(0, end - start);
+            if (Snippet.length > 100)
+            {
+                const QueryIndex = Snippet.toLowerCase().indexOf(LowerQuery);
+                let Start = Math.max(0, QueryIndex - 20);
+                let End = Math.min(Snippet.length, QueryIndex + LowerQuery.length + 50);
+
+                if (Start > 0) Snippet = '...' + Snippet.substring(Start);
+                if (End < Snippet.length) Snippet = Snippet.substring(0, End - Start) + '...';
+                else Snippet = Snippet.substring(0, End - Start);
             }
-            return snippet;
+
+            return Snippet;
         }
     }
-    // If query not found in any specific line, fall back to first line
-    return lines.length > 0 ? lines[0].trim() : '';
+
+    return Lines.length > 0 ? Lines[0].trim() : '';
 }
 
+async function getAllFilesRecursive(Dir)
+{
+    let Files = [];
+    const Entries = await fs.readdir(Dir, { withFileTypes: true });
 
-// Endpoint for searching documents
-app.get('/search', async (req, res) => {
-    const query = req.query.q ? req.query.q.toLowerCase() : '';
-    const results = [];
+    for (const Entry of Entries)
+    {
+        const FullPath = path.join(Dir, Entry.name);
+        if (Entry.isDirectory())
+        {
+            const SubFiles = await getAllFilesRecursive(FullPath);
+            Files = Files.concat(SubFiles);
+        }
+        else
+        {
+            Files.push(FullPath);
+        }
+    }
 
-    try {
-        const files = await fs.readdir(ARCHIVE_DIR);
+    return Files;
+}
 
-        for (const file of files) {
-            const filePath = path.join(ARCHIVE_DIR, file);
-            const stats = await fs.stat(filePath);
+app.get('/search', async (req, res) =>
+{
+    const Query = req.query.q ? req.query.q.toLowerCase() : '';
+    const Results = [];
 
-            if (stats.isFile()) {
-                const ext = getFileExtension(file);
-                let displaySnippet = ''; // This will be the line displayed in search results
-                let contentToSearch = ''; // The full content (or filename) used for the search match
-                let firstLineForTitle = ''; // Keep track of the very first line for the title format
+    try
+    {
+        const AllFiles = await getAllFilesRecursive(ARCHIVE_DIR);
 
-                // Determine if it's a text-like file that we can read for content
-                const isTextFile = ['.md', '.txt', '.json', '.xml', '.html', '.js', '.css'].includes(ext);
+        for (const FilePath of AllFiles)
+        {
+            const Stats = await fs.stat(FilePath);
+            if (!Stats.isFile()) continue;
 
-                // Always add filename to contentToSearch for a broader match
-                contentToSearch += file.toLowerCase();
+            const Extension = getFileExtension(FilePath);
+            const RelativePath = path.relative(ARCHIVE_DIR, FilePath);
+            const FileName = path.basename(FilePath);
+            const DirTag = path.dirname(RelativePath).split(path.sep)[0].toUpperCase();
 
-                let fileContent = null; // Store actual file content if read
+            const IsTextFile = ['.md', '.txt', '.json', '.xml', '.html', '.js', '.css'].includes(Extension);
+            let ContentToSearch = FileName.toLowerCase();
+            let FileContent = null;
+            let FirstLine = '';
+            let DisplaySnippet = '';
 
-                if (isTextFile) {
-                    fileContent = await getTextFileContent(filePath);
-                    if (fileContent) {
-                        const lines = fileContent.split('\n');
-                        if (lines.length > 0) {
-                            firstLineForTitle = lines[0].trim();
-                        }
-                        contentToSearch += ' ' + fileContent.toLowerCase(); // Add content to search string
-                    }
-                }
-
-                // Determine the displaySnippet based on query and content
-                if (query === '') {
-                    // No query:
-                    if (firstLineForTitle) {
-                        displaySnippet = firstLineForTitle;
-                    } else {
-                        // For non-text files or empty text files, display generic type
-                        displaySnippet = `[${ext.substring(1).toUpperCase()} File]`;
-                    }
-                } else {
-                    // Query is present:
-                    let foundInContent = false;
-                    if (isTextFile && fileContent) {
-                        displaySnippet = getRelevantSnippet(fileContent, query);
-                        // If getRelevantSnippet returns a snippet that contains the query, then it's found in content
-                        if (displaySnippet.toLowerCase().includes(query)) {
-                             foundInContent = true;
-                        }
-                    }
-
-                    // If query wasn't found in content (or it's not a text file)
-                    // and it's found in the filename, display filename as snippet or generic
-                    if (!foundInContent && file.toLowerCase().includes(query)) {
-                        displaySnippet = `ファイル名の一致：${file}`;
-                    } else if (!foundInContent && !file.toLowerCase().includes(query)) {
-                         // Fallback for cases where query is present but not found clearly in snippet or filename
-                         displaySnippet = `[${ext.substring(1).toUpperCase()} File]`;
-                         if (firstLineForTitle) { // Prefer first line for text files if query not clearly matched in snippet/filename
-                            displaySnippet = firstLineForTitle;
-                         }
-                    }
-                    // If foundInContent is true, displaySnippet is already set by getRelevantSnippet
-                }
-
-
-                // Only add to results if the query is empty OR the `contentToSearch` contains the query.
-                // This ensures that all files show when query is empty, and only relevant files otherwise.
-                if (query === '' || contentToSearch.includes(query)) {
-                    results.push({
-                        fileName: file,
-                        displaySnippet: displaySnippet,
-                        firstLineForTitle: firstLineForTitle,
-                        extension: ext
-                    });
+            if (IsTextFile)
+            {
+                FileContent = await getTextFileContent(FilePath);
+                if (FileContent)
+                {
+                    const Lines = FileContent.split('\n');
+                    FirstLine = Lines[0]?.trim() || '';
+                    ContentToSearch += ' ' + FileContent.toLowerCase();
                 }
             }
+
+            if (Query === '')
+            {
+                DisplaySnippet = FirstLine || `[${Extension.substring(1).toUpperCase()} File]`;
+            }
+            else
+            {
+                let FoundInContent = false;
+
+                if (IsTextFile && FileContent)
+                {
+                    DisplaySnippet = getRelevantSnippet(FileContent, Query);
+                    if (DisplaySnippet.toLowerCase().includes(Query))
+                    {
+                        FoundInContent = true;
+                    }
+                }
+
+                if (!FoundInContent && FileName.toLowerCase().includes(Query))
+                {
+                    DisplaySnippet = `ファイル名の一致：${FileName}`;
+                }
+                else if (!FoundInContent)
+                {
+                    DisplaySnippet = FirstLine || `[${Extension.substring(1).toUpperCase()} File]`;
+                }
+            }
+
+            if (Query === '' || ContentToSearch.includes(Query))
+            {
+                Results.push({
+                    fileName: RelativePath.replace(/\\/g, '/'),
+                    displaySnippet: DisplaySnippet,
+                    firstLineForTitle: FirstLine,
+                    extension: Extension,
+                    tag: DirTag
+                });
+            }
         }
-        res.json(results);
-    } catch (error) {
-        console.error('Error during search:', error);
-        res.status(500).json({ error: 'Internal server error during search.' });
+
+        res.json(Results);
+    }
+    catch (Error)
+    {
+        console.error('Search error:', Error);
+        res.status(500).json({ error: 'Internal server error.' });
     }
 });
 
-// Endpoint to get document content for display (no changes needed here)
-app.get('/document/:filename', async (req, res) => {
-    const filename = req.params.filename;
-    const filePath = path.join(ARCHIVE_DIR, filename);
+app.get('/document/:filename(*)', async (req, res) =>
+{
+    const Filename = req.params.filename;
+    const FilePath = path.join(ARCHIVE_DIR, Filename);
 
-    try {
-        const stats = await fs.stat(filePath);
-        if (!stats.isFile()) {
+    try
+    {
+        const Stats = await fs.stat(FilePath);
+        if (!Stats.isFile())
+        {
             return res.status(404).send('File not found.');
         }
 
-        const ext = getFileExtension(filename);
+        const Extension = getFileExtension(Filename);
 
-        if (ext === '.md') {
-            const content = await fs.readFile(filePath, 'utf8');
-            const htmlContent = marked.parse(content);
-            res.send(htmlContent);
-        } else if (['.png', '.jpg', '.jpeg', '.gif', '.mp3', '.mp4', '.webp', '.svg'].includes(ext)) {
-            res.sendFile(filePath);
-        } else {
-            const content = await fs.readFile(filePath, 'utf8');
-            res.setHeader('Content-Type', 'text/html');
-            res.send(`<pre>${content}</pre>`);
+        if (Extension === '.md')
+        {
+            const Content = await fs.readFile(FilePath, 'utf8');
+            const HtmlContent = marked.parse(Content);
+            res.send(HtmlContent);
         }
-    } catch (error) {
-        console.error(`Error serving document ${filename}:`, error);
+        else if (['.png', '.jpg', '.jpeg', '.gif', '.mp3', '.mp4', '.webp', '.svg'].includes(Extension))
+        {
+            res.sendFile(FilePath);
+        }
+        else
+        {
+            const Content = await fs.readFile(FilePath, 'utf8');
+            res.setHeader('Content-Type', 'text/html');
+            res.send(`<pre>${Content}</pre>`);
+        }
+    }
+    catch (Error)
+    {
+        console.error(`Error serving document ${Filename}:`, Error);
         res.status(500).send('Error retrieving document.');
     }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, () =>
+{
     console.log(`Server running on http://localhost:${PORT}`);
 });

@@ -55,41 +55,42 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Function to display search results (mostly unchanged, except for linking)
-    const displayResults = (results) =>
+    const displayResults = (Results) =>
     {
         searchResultsDiv.innerHTML = '';
     
-        if (results.length === 0)
+        if (Results.length === 0)
         {
             searchResultsDiv.innerHTML = '<p>クエリに一致するドキュメントが見つかりません。</p>';
             return;
         }
     
-        results.forEach(Result =>
+        Results.forEach(Result =>
         {
             const ResultItem = document.createElement('div');
             ResultItem.classList.add('result-item');
     
-            const FileName = Result.fileName;
-            const Extension = Result.extension;
+            const FilePath = Result.fileName;
+            const FileName = FilePath.split('/').pop();
             const FileNameWithoutExt = FileName.split('.').slice(0, -1).join('.');
             const FirstLine = Result.firstLineForTitle ? Result.firstLineForTitle.trim() : '';
-            const DisplayTitle = FirstLine ? `${FileNameWithoutExt} | ${FirstLine}` : FileNameWithoutExt;
+            const Tag = Result.tag || 'UNTAGGED';
+            const DisplayTitle = `${FileNameWithoutExt} | ${FirstLine}`;
     
             const Link = document.createElement('a');
             Link.href = 'javascript:void(0)';
-            Link.textContent = DisplayTitle;
-            Link.title = `Open ${FileName}`;
-            Link.addEventListener('click', () => openDocument(FileName, DisplayTitle));
+            Link.textContent = `[ ${Tag} ] ${DisplayTitle}`;
+            Link.title = `Open ${FilePath}`;
+            Link.addEventListener('click', () => openDocument(FilePath, `[${Tag}] ${DisplayTitle}`));
     
             const PreviewText = document.createElement('p');
-            PreviewText.textContent = Result.displaySnippet || `[${Extension.substring(1).toUpperCase()} Document]`;
+            PreviewText.textContent = Result.displaySnippet || `[${Result.extension.substring(1).toUpperCase()} Document]`;
     
             ResultItem.appendChild(Link);
             ResultItem.appendChild(PreviewText);
             searchResultsDiv.appendChild(ResultItem);
         });
-    };
+    };    
     
     // Function to open a document in the document view
     const openDocument = async (filename, titleForPage) => {
